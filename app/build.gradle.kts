@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt")
 }
 
 android {
@@ -59,9 +60,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation ("androidx.activity:activity-compose:1.8.2")
-    implementation ("androidx.compose.ui:ui")
-    implementation ("androidx.compose.ui:ui-graphics")
-    implementation ("androidx.compose.ui:ui-tooling-preview")
-    implementation ("androidx.compose.material3:material3")
+    implementation (libs.androidx.activity.compose.v182)
+    implementation (libs.ui)
+    implementation (libs.ui.graphics)
+    implementation (libs.ui.tooling.preview)
+    implementation (libs.material3)
 }

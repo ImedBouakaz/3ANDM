@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import android.content.Context
 
 @Entity(tableName = "recipes")
 data class Recipe(
@@ -22,7 +23,7 @@ abstract class RecipeDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: RecipeDatabase? = null
 
-        fun getDatabase(context: android.content.Context): RecipeDatabase {
+        fun getDatabase(context: Context): RecipeDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
