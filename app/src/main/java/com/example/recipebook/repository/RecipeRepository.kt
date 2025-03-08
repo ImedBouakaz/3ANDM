@@ -2,10 +2,7 @@ package com.example.recipebook.repository
 
 import android.util.Log
 import com.example.recipebook.api.NetworkModule
-import com.example.recipebook.data.Recipe
-import com.example.recipebook.data.RecipeDao
 import com.example.recipebook.data.RecipeSearchQuery
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.IOException
 
@@ -16,9 +13,21 @@ sealed class Result<out T> {
 }
 
 class RecipeRepository(
-    private val recipeDao: RecipeDao,
+    private val recipeDao: com.example.recipebook.data.RecipeDao,
     private val api: NetworkModule = NetworkModule
 ) {
+
+    fun getStoredRecipes() = flow {
+        emit(Result.Loading)
+        try {
+            recipeDao.getAllRecipes().collect { recipes ->
+                emit(Result.Success(recipes))
+            }
+        } catch (e: Exception) {
+            emit(Result.Error(e))
+        }
+    }
+
     fun searchRecipes(query: RecipeSearchQuery) = flow {
         emit(Result.Loading)
         try {
@@ -27,10 +36,10 @@ class RecipeRepository(
                 page = query.page,
                 query = query.query.takeIf { it.isNotEmpty() }
             )
-            
+
             // Cache the results
             recipeDao.insertRecipes(response.results)
-            
+
             emit(Result.Success(response))
         } catch (e: IOException) {
             // Network error, try to load from cache

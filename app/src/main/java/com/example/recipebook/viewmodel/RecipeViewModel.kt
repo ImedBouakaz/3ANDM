@@ -6,10 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.recipebook.api.NetworkModule
 import com.example.recipebook.data.Recipe
-import com.example.recipebook.data.RecipeDao
 import com.example.recipebook.data.RecipeSearchQuery
+import com.example.recipebook.data.RecipeSearchResponse
 import com.example.recipebook.repository.RecipeRepository
 import com.example.recipebook.repository.Result
 import kotlinx.coroutines.Job
@@ -42,6 +41,31 @@ class RecipeViewModel(
         loadRecipes()
     }
 
+    fun loadStoredRecipes() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                searchQuery = "",
+                currentPage = 1
+            )
+
+            repository.getStoredRecipes().collect { result ->
+                _uiState.value = when (result) {
+                    is Result.Loading -> _uiState.value.copy(isLoading = true)
+                    is Result.Success -> _uiState.value.copy(
+                        isLoading = false,
+                        recipes = result.data,
+                        error = null
+                    )
+                    is Result.Error -> _uiState.value.copy(
+                        isLoading = false,
+                        error = result.exception.message
+                    )
+                }
+            }
+        }
+    }
+
     fun loadRecipes(refresh: Boolean = false) {
         if (refresh) {
             _uiState.value = _uiState.value.copy(currentPage = 1)
@@ -58,16 +82,23 @@ class RecipeViewModel(
                 _uiState.value = when (result) {
                     is Result.Loading -> _uiState.value.copy(isLoading = true)
                     is Result.Success -> {
-                        val recipes = if (refresh) {
-                            result.data
-                        } else {
-                            _uiState.value.recipes + result.data
+                        val newRecipes = when (result.data) {
+                            is RecipeSearchResponse -> {
+                                if (refresh) result.data.results
+                                else _uiState.value.recipes + result.data.results
+                            }
+                            is List<*> -> {
+                                @Suppress("UNCHECKED_CAST")
+                                if (refresh) result.data as List<Recipe>
+                                else _uiState.value.recipes + (result.data as List<Recipe>)
+                            }
+                            else -> emptyList()
                         }
                         _uiState.value.copy(
                             isLoading = false,
-                            recipes = recipes,
+                            recipes = newRecipes,
                             error = null,
-                            hasMorePages = recipes.size >= 30
+                            hasMorePages = newRecipes.size >= 30
                         )
                     }
                     is Result.Error -> _uiState.value.copy(

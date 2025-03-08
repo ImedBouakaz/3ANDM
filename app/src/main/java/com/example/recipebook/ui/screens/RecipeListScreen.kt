@@ -1,31 +1,48 @@
 package com.example.recipebook.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.recipebook.data.Recipe
 import com.example.recipebook.viewmodel.RecipeViewModel
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipeListScreen(
     viewModel: RecipeViewModel,
     onRecipeClick: (Recipe) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
+        // Top App Bar with Home button
+        TopAppBar(
+            title = { Text("Recipe Book") },
+            actions = {
+                IconButton(onClick = { viewModel.loadStoredRecipes() }) {
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = "Show stored recipes"
+                    )
+                }
+            }
+        )
+
         // Search Bar
         SearchBar(
             query = uiState.searchQuery,
@@ -33,13 +50,6 @@ fun RecipeListScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-        )
-
-        // Categories
-        CategoryList(
-            selectedCategory = uiState.selectedCategory,
-            onCategorySelected = viewModel::onCategorySelected,
-            modifier = Modifier.fillMaxWidth()
         )
 
         // Recipe List
@@ -87,29 +97,6 @@ private fun SearchBar(
 }
 
 @Composable
-private fun CategoryList(
-    selectedCategory: String,
-    onCategorySelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val categories = listOf("All", "Breakfast", "Lunch", "Dinner", "Dessert", "Snack")
-    
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(categories) { category ->
-            FilterChip(
-                selected = category == selectedCategory,
-                onClick = { onCategorySelected(category) },
-                label = { Text(category) }
-            )
-        }
-    }
-}
-
-@Composable
 private fun RecipeList(
     recipes: List<Recipe>,
     onRecipeClick: (Recipe) -> Unit,
@@ -117,17 +104,34 @@ private fun RecipeList(
     isLoadingMore: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+
+    // Implement infinite scrolling
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+                ?: return@derivedStateOf false
+
+            lastVisibleItem.index >= recipes.size - 1
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value && !isLoadingMore) {
+            onLoadMore()
+        }
+    }
+
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        itemsIndexed(recipes) { index, recipe ->
-            if (index >= recipes.size - 1) {
-                LaunchedEffect(Unit) {
-                    onLoadMore()
-                }
-            }
+        items(
+            items = recipes,
+            key = { recipe -> recipe.id }
+        ) { recipe ->
             RecipeCard(recipe = recipe, onClick = { onRecipeClick(recipe) })
         }
 
@@ -156,34 +160,42 @@ private fun RecipeCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column {
             AsyncImage(
                 model = recipe.featuredImage,
                 contentDescription = recipe.title,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
             )
-            
-            Column(modifier = Modifier.padding(16.dp)) {
+
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
                 Text(
                     text = recipe.title,
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    text = "By ${recipe.publisher}",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "by ${recipe.publisher}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 if (recipe.rating > 0) {
                     Text(
                         text = "Rating: ${recipe.rating}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -207,4 +219,4 @@ private fun ErrorMessage(
             Text("Retry")
         }
     }
-} 
+}

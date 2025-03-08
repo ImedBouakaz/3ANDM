@@ -1,20 +1,17 @@
 package com.example.recipebook.data
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RecipeDao {
     @Query("SELECT * FROM recipes")
-    suspend fun getAllRecipes(): List<Recipe>
+    fun getAllRecipes(): Flow<List<Recipe>>
 
-    @Query("SELECT * FROM recipes WHERE title LIKE :query")
+    @Query("SELECT * FROM recipes WHERE title LIKE '%' || :query || '%'")
     suspend fun searchRecipes(query: String): List<Recipe>
 
-    @Query("SELECT * FROM recipes WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM recipes WHERE id = :id")
     suspend fun getRecipeById(id: String): Recipe?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -25,4 +22,7 @@ interface RecipeDao {
 
     @Delete
     suspend fun deleteRecipe(recipe: Recipe)
+
+    @Query("DELETE FROM recipes")
+    suspend fun deleteAllRecipes()
 } 
