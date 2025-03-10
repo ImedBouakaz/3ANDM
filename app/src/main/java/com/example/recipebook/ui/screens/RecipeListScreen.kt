@@ -130,6 +130,7 @@ private fun IngredientFilters(
     }
 }
 
+
 @Composable
 private fun SearchBar(
     query: String,
