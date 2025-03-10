@@ -1,9 +1,5 @@
 package com.example.recipebook.viewmodel
 
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.recipebook.data.Recipe
@@ -54,11 +50,13 @@ class RecipeViewModel(
     }
 
     fun loadStoredRecipes() {
+        searchJob?.cancel()
         viewModelScope.launch {
             _uiState.update { currentState ->
                 currentState.copy(
                     isLoading = true,
                     searchQuery = "",
+                    selectedCategory = "",
                     currentPage = 1
                 )
             }
@@ -67,15 +65,19 @@ class RecipeViewModel(
                 _uiState.update { currentState ->
                     when (result) {
                         is Result.Loading -> currentState.copy(isLoading = true)
-                        is Result.Success -> currentState.copy(
-                            isLoading = false,
-                            recipes = result.data,
-                            error = null
-                        )
-                        is Result.Error -> currentState.copy(
-                            isLoading = false,
-                            error = result.exception.message
-                        )
+                        is Result.Success -> {
+                            currentState.copy(
+                                isLoading = false,
+                                recipes = result.data,
+                                error = null
+                            )
+                        }
+                        is Result.Error -> {
+                            currentState.copy(
+                                isLoading = false,
+                                error = result.exception.message
+                            )
+                        }
                     }
                 }
             }
@@ -101,24 +103,25 @@ class RecipeViewModel(
                     when (result) {
                         is Result.Loading -> currentState.copy(isLoading = true)
                         is Result.Success -> {
-                            val newRecipes = when (result.data) {
+                            when (val data = result.data) {
                                 is RecipeSearchResponse -> {
-                                    if (refresh) result.data.results
-                                    else currentState.recipes + result.data.results
+                                    val newRecipes = if (refresh) {
+                                        data.results
+                                    } else {
+                                        currentState.recipes + data.results
+                                    }
+                                    currentState.copy(
+                                        isLoading = false,
+                                        recipes = newRecipes,
+                                        error = null,
+                                        hasMorePages = newRecipes.size >= PAGE_SIZE
+                                    )
                                 }
-                                is List<*> -> {
-                                    @Suppress("UNCHECKED_CAST")
-                                    if (refresh) result.data as List<Recipe>
-                                    else currentState.recipes + (result.data as List<Recipe>)
-                                }
-                                else -> emptyList()
+                                else -> currentState.copy(
+                                    isLoading = false,
+                                    error = "Unexpected response type"
+                                )
                             }
-                            currentState.copy(
-                                isLoading = false,
-                                recipes = newRecipes,
-                                error = null,
-                                hasMorePages = newRecipes.size >= 30
-                            )
                         }
                         is Result.Error -> currentState.copy(
                             isLoading = false,
@@ -153,13 +156,21 @@ class RecipeViewModel(
 
     fun onSearchQueryChanged(query: String) {
         searchJob?.cancel()
+
+        if (query.isEmpty()) {
+            loadStoredRecipes()
+            return
+        }
+
         resetState()
         _uiState.update { currentState ->
             currentState.copy(
                 searchQuery = query,
-                selectedCategory = "" // Clear category when searching
+                selectedCategory = "",
+                isLoading = true
             )
         }
+
         searchJob = viewModelScope.launch {
             delay(SEARCH_DEBOUNCE_MS)
             loadRecipes(refresh = true)
