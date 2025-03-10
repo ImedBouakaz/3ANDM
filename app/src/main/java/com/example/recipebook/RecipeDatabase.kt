@@ -44,9 +44,9 @@ abstract class RecipeDatabase : RoomDatabase() {
                             INSTANCE = newInstance
                         }
                 } catch (e: Exception) {
-                    Log.e(TAG, "getDatabase: Failed to create database", e)
-                    Log.e(TAG, "getDatabase: Error message: ${e.message}")
-                    Log.e(TAG, "getDatabase: Stack trace: ${e.stackTrace.joinToString("\n")}")
+                    Log.e(TAG, "La création de la base de données a échouée", e)
+                    Log.e(TAG, "Message d'erreur : ${e.message}")
+                    Log.e(TAG, "Stack trace: ${e.stackTrace.joinToString("\n")}")
                     throw e
                 }
 

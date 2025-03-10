@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.example.recipebook.data.Recipe
 import com.example.recipebook.ui.screens.RecipeListScreen
 import com.example.recipebook.ui.screens.SplashScreen
@@ -53,7 +54,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
+//                        color = Color(0xFFFB8A4E)
                     ) {
                         database?.let {
                             if (selectedRecipe != null) {

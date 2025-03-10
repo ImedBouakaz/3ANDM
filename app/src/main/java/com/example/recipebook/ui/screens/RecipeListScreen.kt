@@ -1,8 +1,10 @@
 package com.example.recipebook.ui.screens
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.DividerDefaults.color
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.recipebook.data.Recipe
 import com.example.recipebook.viewmodel.RecipeViewModel
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +53,14 @@ fun RecipeListScreen(
             onQueryChange = viewModel::onSearchQueryChanged,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        // Ingredient Filter Chips
+        IngredientFilters(
+            selectedIngredient = uiState.searchQuery,
+            onIngredientSelected = viewModel::onSearchQueryChanged,
+            modifier = Modifier.fillMaxWidth()
         )
 
         // Recipe List
@@ -75,6 +86,46 @@ fun RecipeListScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun IngredientFilters(
+    selectedIngredient: String,
+    onIngredientSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val ingredients = listOf(
+        "Chicken",
+        "Beef",
+        "Soup",
+        "Dessert",
+        "Vegetarian",
+        "French",
+        "Salad",
+        "Fish",
+        "Pasta"
+    )
+
+    LazyRow(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(ingredients) { ingredient ->
+            FilterChip(
+                selected = selectedIngredient == ingredient,
+                onClick = { onIngredientSelected(ingredient) },
+                label = { Text(ingredient) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color(0xFFFB8A4E).copy(alpha = 0.1f),
+                    labelColor = Color(0xFFFB8A4E),
+                    selectedContainerColor = Color(0xFFFB8A4E),
+                    selectedLabelColor = Color.White
+                ),
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
         }
     }
 }
@@ -159,8 +210,12 @@ private fun RecipeCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+            .clickable(onClick = onClick)
+            .border(width = 2.dp, color = Color(0xffffb5a8),
+                shape = RoundedCornerShape(12.dp)),
+            colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFB8A4E).copy(alpha = 0.1f)
+        )
     ) {
         Column {
             AsyncImage(
@@ -180,7 +235,8 @@ private fun RecipeCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color.Black
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -188,14 +244,14 @@ private fun RecipeCard(
                 Text(
                     text = "by ${recipe.publisher}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.White.copy(alpha = 0.8f)
                 )
 
                 if (recipe.rating > 0) {
                     Text(
                         text = "Rating: ${recipe.rating}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = Color.White
                     )
                 }
             }
@@ -215,7 +271,12 @@ private fun ErrorMessage(
     ) {
         Text(text = message)
         Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onRetry) {
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xfff59d6e)
+            )
+        ) {
             Text("Retry")
         }
     }

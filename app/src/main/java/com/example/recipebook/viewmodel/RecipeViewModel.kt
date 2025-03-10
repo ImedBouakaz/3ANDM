@@ -28,6 +28,12 @@ data class RecipeUiState(
     val selectedCategory: String = ""
 )
 
+sealed class RecipeError {
+    data class NetworkError(val message: String) : RecipeError()
+    data class DatabaseError(val message: String) : RecipeError()
+    data class ValidationError(val message: String) : RecipeError()
+}
+
 class RecipeViewModel(
     private val repository: RecipeRepository
 ) : ViewModel() {
@@ -37,8 +43,12 @@ class RecipeViewModel(
 
     private var searchJob: Job? = null
 
+    private companion object {
+        const val PAGE_SIZE = 30
+    }
+
     init {
-        loadRecipes()
+        loadStoredRecipes()
     }
 
     fun loadStoredRecipes() {
@@ -118,7 +128,12 @@ class RecipeViewModel(
     }
 
     fun onSearchQueryChanged(query: String) {
-        _uiState.value = _uiState.value.copy(searchQuery = query)
+        _uiState.value = _uiState.value.copy(
+            searchQuery = query,
+            recipes = emptyList(),
+            currentPage = 1,
+            hasMorePages = true
+        )
         searchJob?.cancel()
         searchJob = viewModelScope.launch {
             delay(300) // Debounce search
@@ -137,5 +152,10 @@ class RecipeViewModel(
 
     fun clearSelectedRecipe() {
         _uiState.value = _uiState.value.copy(selectedRecipe = null)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        searchJob?.cancel()
     }
 } 
