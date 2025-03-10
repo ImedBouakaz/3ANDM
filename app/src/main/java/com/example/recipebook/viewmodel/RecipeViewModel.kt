@@ -15,6 +15,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class RecipeUiState(
@@ -45,6 +46,7 @@ class RecipeViewModel(
 
     private companion object {
         const val PAGE_SIZE = 30
+        const val SEARCH_DEBOUNCE_MS = 300L
     }
 
     init {
@@ -53,24 +55,28 @@ class RecipeViewModel(
 
     fun loadStoredRecipes() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                searchQuery = "",
-                currentPage = 1
-            )
+            _uiState.update { currentState ->
+                currentState.copy(
+                    isLoading = true,
+                    searchQuery = "",
+                    currentPage = 1
+                )
+            }
 
             repository.getStoredRecipes().collect { result ->
-                _uiState.value = when (result) {
-                    is Result.Loading -> _uiState.value.copy(isLoading = true)
-                    is Result.Success -> _uiState.value.copy(
-                        isLoading = false,
-                        recipes = result.data,
-                        error = null
-                    )
-                    is Result.Error -> _uiState.value.copy(
-                        isLoading = false,
-                        error = result.exception.message
-                    )
+                _uiState.update { currentState ->
+                    when (result) {
+                        is Result.Loading -> currentState.copy(isLoading = true)
+                        is Result.Success -> currentState.copy(
+                            isLoading = false,
+                            recipes = result.data,
+                            error = null
+                        )
+                        is Result.Error -> currentState.copy(
+                            isLoading = false,
+                            error = result.exception.message
+                        )
+                    }
                 }
             }
         }
@@ -78,7 +84,9 @@ class RecipeViewModel(
 
     fun loadRecipes(refresh: Boolean = false) {
         if (refresh) {
-            _uiState.value = _uiState.value.copy(currentPage = 1)
+            _uiState.update { currentState ->
+                currentState.copy(currentPage = 1)
+            }
         }
 
         viewModelScope.launch {
@@ -89,32 +97,34 @@ class RecipeViewModel(
                     category = _uiState.value.selectedCategory
                 )
             ).collect { result ->
-                _uiState.value = when (result) {
-                    is Result.Loading -> _uiState.value.copy(isLoading = true)
-                    is Result.Success -> {
-                        val newRecipes = when (result.data) {
-                            is RecipeSearchResponse -> {
-                                if (refresh) result.data.results
-                                else _uiState.value.recipes + result.data.results
+                _uiState.update { currentState ->
+                    when (result) {
+                        is Result.Loading -> currentState.copy(isLoading = true)
+                        is Result.Success -> {
+                            val newRecipes = when (result.data) {
+                                is RecipeSearchResponse -> {
+                                    if (refresh) result.data.results
+                                    else currentState.recipes + result.data.results
+                                }
+                                is List<*> -> {
+                                    @Suppress("UNCHECKED_CAST")
+                                    if (refresh) result.data as List<Recipe>
+                                    else currentState.recipes + (result.data as List<Recipe>)
+                                }
+                                else -> emptyList()
                             }
-                            is List<*> -> {
-                                @Suppress("UNCHECKED_CAST")
-                                if (refresh) result.data as List<Recipe>
-                                else _uiState.value.recipes + (result.data as List<Recipe>)
-                            }
-                            else -> emptyList()
+                            currentState.copy(
+                                isLoading = false,
+                                recipes = newRecipes,
+                                error = null,
+                                hasMorePages = newRecipes.size >= 30
+                            )
                         }
-                        _uiState.value.copy(
+                        is Result.Error -> currentState.copy(
                             isLoading = false,
-                            recipes = newRecipes,
-                            error = null,
-                            hasMorePages = newRecipes.size >= 30
+                            error = result.exception.message
                         )
                     }
-                    is Result.Error -> _uiState.value.copy(
-                        isLoading = false,
-                        error = result.exception.message
-                    )
                 }
             }
         }
@@ -122,36 +132,62 @@ class RecipeViewModel(
 
     fun loadNextPage() {
         if (!_uiState.value.isLoading && _uiState.value.hasMorePages) {
-            _uiState.value = _uiState.value.copy(currentPage = _uiState.value.currentPage + 1)
+            _uiState.update { currentState ->
+                currentState.copy(currentPage = currentState.currentPage + 1)
+            }
             loadRecipes()
         }
     }
 
+    fun resetState() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                recipes = emptyList(),
+                currentPage = 1,
+                hasMorePages = true,
+                error = null,
+                isLoading = false
+            )
+        }
+    }
+
     fun onSearchQueryChanged(query: String) {
-        _uiState.value = _uiState.value.copy(
-            searchQuery = query,
-            recipes = emptyList(),
-            currentPage = 1,
-            hasMorePages = true
-        )
         searchJob?.cancel()
+        resetState()
+        _uiState.update { currentState ->
+            currentState.copy(
+                searchQuery = query,
+                selectedCategory = "" // Clear category when searching
+            )
+        }
         searchJob = viewModelScope.launch {
-            delay(300) // Debounce search
+            delay(SEARCH_DEBOUNCE_MS)
             loadRecipes(refresh = true)
         }
     }
 
     fun onCategorySelected(category: String) {
-        _uiState.value = _uiState.value.copy(selectedCategory = category)
+        searchJob?.cancel()
+        resetState()
+        _uiState.update { currentState ->
+            currentState.copy(
+                selectedCategory = category,
+                searchQuery = "" // Clear search query when selecting category
+            )
+        }
         loadRecipes(refresh = true)
     }
 
     fun selectRecipe(recipe: Recipe) {
-        _uiState.value = _uiState.value.copy(selectedRecipe = recipe)
+        _uiState.update { currentState ->
+            currentState.copy(selectedRecipe = recipe)
+        }
     }
 
     fun clearSelectedRecipe() {
-        _uiState.value = _uiState.value.copy(selectedRecipe = null)
+        _uiState.update { currentState ->
+            currentState.copy(selectedRecipe = null)
+        }
     }
 
     override fun onCleared() {
