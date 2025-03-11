@@ -1,6 +1,5 @@
 package com.example.recipebook.ui.screens
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,13 +8,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.material3.DividerDefaults.color
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,6 +24,7 @@ import coil.compose.AsyncImage
 import com.example.recipebook.data.Recipe
 import com.example.recipebook.viewmodel.RecipeViewModel
 import androidx.compose.ui.graphics.Color
+import com.example.recipebook.data.decodeHtml
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,12 +37,20 @@ fun RecipeListScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         // Top App Bar with Home button
         TopAppBar(
-            title = { Text("Recipe Book") },
+            title = { Text("Yumm") },
             actions = {
+                // Database button
                 IconButton(onClick = { viewModel.loadStoredRecipes() }) {
                     Icon(
+                        imageVector = Icons.AutoMirrored.Filled.List,
+                        contentDescription = "Show saved recipes"
+                    )
+                }
+                // Home button (clear screen)
+                IconButton(onClick = { viewModel.clearScreen() }) {
+                    Icon(
                         imageVector = Icons.Default.Home,
-                        contentDescription = "Show stored recipes"
+                        contentDescription = "Clear screen"
                     )
                 }
             }
@@ -64,7 +73,7 @@ fun RecipeListScreen(
         )
 
         // Recipe List
-        Box(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             if (uiState.isLoading && uiState.recipes.isEmpty()) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)
@@ -119,9 +128,24 @@ private fun IngredientFilters(
                 onClick = { onIngredientSelected(ingredient) },
                 label = { Text(ingredient) },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = Color(0xFFFB8A4E).copy(alpha = 0.1f),
-                    labelColor = Color(0xFFFB8A4E),
-                    selectedContainerColor = Color(0xFFFB8A4E),
+                    containerColor = Color(
+                        alpha = 26,  // 10% opacity
+                        red = 251,
+                        green = 138,
+                        blue = 78
+                    ),
+                    labelColor = Color(
+                        alpha = 255,
+                        red = 251,
+                        green = 138,
+                        blue = 78
+                    ),
+                    selectedContainerColor = Color(
+                        alpha = 255,
+                        red = 251,
+                        green = 138,
+                        blue = 78
+                    ),
                     selectedLabelColor = Color.White
                 ),
                 modifier = Modifier.padding(vertical = 4.dp)
@@ -129,7 +153,6 @@ private fun IngredientFilters(
         }
     }
 }
-
 
 @Composable
 private fun SearchBar(
@@ -140,11 +163,62 @@ private fun SearchBar(
     TextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier,
+        modifier = modifier
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = Color(
+                    alpha = 26,
+                    red = 251,
+                    green = 138,
+                    blue = 78
+                )
+            ),
         placeholder = { Text("Search recipes...") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+        leadingIcon = {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = "Search",
+                tint = Color(
+                    alpha = 255,
+                    red = 251,
+                    green = 138,
+                    blue = 78
+                )
+            )
+        },
         singleLine = true,
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(24.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White,
+            focusedIndicatorColor = Color(
+                alpha = 255,
+                red = 251,
+                green = 138,
+                blue = 78
+            ),
+            unfocusedIndicatorColor = Color(
+                alpha = 26,
+                red = 251,
+                green = 138,
+                blue = 78
+            ),
+            focusedPlaceholderColor = Color(
+                alpha = 128,
+                red = 251,
+                green = 138,
+                blue = 78
+            ),
+            unfocusedPlaceholderColor = Color(
+                alpha = 128,
+                red = 251,
+                green = 138,
+                blue = 78
+            ),
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black
+        )
     )
 }
 
@@ -211,17 +285,21 @@ private fun RecipeCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .border(width = 2.dp, color = Color(0xffffb5a8),
-                shape = RoundedCornerShape(12.dp)),
-            colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFB8A4E).copy(alpha = 0.1f)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(
+                alpha = 255,
+                red = 251,
+                green = 138,
+                blue = 78
+            )
         )
     ) {
         Column {
             AsyncImage(
                 model = recipe.featuredImage,
-                contentDescription = recipe.title,
+                contentDescription = decodeHtml(recipe.title),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -232,18 +310,18 @@ private fun RecipeCard(
                 modifier = Modifier.padding(12.dp)
             ) {
                 Text(
-                    text = recipe.title,
+                    text = decodeHtml(recipe.title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = Color.Black
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "by ${recipe.publisher}",
+                    text = "by ${decodeHtml(recipe.publisher)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.8f)
                 )
@@ -275,7 +353,12 @@ private fun ErrorMessage(
         Button(
             onClick = onRetry,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xfff59d6e)
+                containerColor = Color(
+                    alpha = 255,
+                    red = 251,
+                    green = 138,
+                    blue = 78
+                )
             )
         ) {
             Text("Retry")

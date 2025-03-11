@@ -47,7 +47,6 @@ data class Recipe(
     val longDateUpdated: Long = 0
 )
 
-
 data class RecipeResponse(
     val recipe: Recipe
 )

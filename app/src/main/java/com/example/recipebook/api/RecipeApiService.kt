@@ -16,4 +16,4 @@ interface RecipeApiService {
     suspend fun getRecipe(
         @Query("id") id: String
     ): RecipeResponse
-} 
+}

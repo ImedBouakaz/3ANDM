@@ -58,6 +58,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.datastore.core.android)
     val roomVersion = "2.6.1"
     val retrofitVersion = "2.9.0"
     val coilVersion = "2.5.0"
@@ -89,6 +90,7 @@ dependencies {
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
+    implementation("androidx.compose.material:material-icons-extended:1.6.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

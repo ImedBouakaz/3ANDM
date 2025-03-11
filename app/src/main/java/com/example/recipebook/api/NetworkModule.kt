@@ -27,4 +27,4 @@ object NetworkModule {
         .build()
 
     val recipeApiService: RecipeApiService = retrofit.create(RecipeApiService::class.java)
-} 
+}

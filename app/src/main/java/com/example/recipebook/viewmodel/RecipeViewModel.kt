@@ -25,12 +25,6 @@ data class RecipeUiState(
     val selectedCategory: String = ""
 )
 
-sealed class RecipeError {
-    data class NetworkError(val message: String) : RecipeError()
-    data class DatabaseError(val message: String) : RecipeError()
-    data class ValidationError(val message: String) : RecipeError()
-}
-
 class RecipeViewModel(
     private val repository: RecipeRepository
 ) : ViewModel() {
@@ -43,10 +37,6 @@ class RecipeViewModel(
     private companion object {
         const val PAGE_SIZE = 30
         const val SEARCH_DEBOUNCE_MS = 300L
-    }
-
-    init {
-        loadStoredRecipes()
     }
 
     fun loadStoredRecipes() {
@@ -92,41 +82,49 @@ class RecipeViewModel(
         }
 
         viewModelScope.launch {
-            repository.searchRecipes(
-                RecipeSearchQuery(
-                    page = _uiState.value.currentPage,
-                    query = _uiState.value.searchQuery,
-                    category = _uiState.value.selectedCategory
-                )
-            ).collect { result ->
-                _uiState.update { currentState ->
-                    when (result) {
-                        is Result.Loading -> currentState.copy(isLoading = true)
-                        is Result.Success -> {
-                            when (val data = result.data) {
-                                is RecipeSearchResponse -> {
-                                    val newRecipes = if (refresh) {
-                                        data.results
-                                    } else {
-                                        currentState.recipes + data.results
+            _uiState.update { currentState ->
+                currentState.copy(isLoading = true)
+            }
+
+            // For searches, use network results
+            if (_uiState.value.searchQuery.isNotEmpty() || _uiState.value.selectedCategory.isNotEmpty()) {
+                repository.searchRecipes(
+                    RecipeSearchQuery(
+                        page = _uiState.value.currentPage,
+                        query = _uiState.value.searchQuery,
+                        category = _uiState.value.selectedCategory
+                    )
+                ).collect { result ->
+                    _uiState.update { currentState ->
+                        when (result) {
+                            is Result.Loading -> currentState
+                            is Result.Success -> {
+                                when (val data = result.data) {
+                                    is RecipeSearchResponse -> {
+                                        val newRecipes = if (refresh) {
+                                            data.results
+                                        } else {
+                                            currentState.recipes + data.results
+                                        }
+                                        // Remove automatic database saving during search
+                                        currentState.copy(
+                                            isLoading = false,
+                                            recipes = newRecipes,
+                                            error = null,
+                                            hasMorePages = newRecipes.size >= PAGE_SIZE
+                                        )
                                     }
-                                    currentState.copy(
+                                    else -> currentState.copy(
                                         isLoading = false,
-                                        recipes = newRecipes,
-                                        error = null,
-                                        hasMorePages = newRecipes.size >= PAGE_SIZE
+                                        error = "Unexpected response type"
                                     )
                                 }
-                                else -> currentState.copy(
-                                    isLoading = false,
-                                    error = "Unexpected response type"
-                                )
                             }
+                            is Result.Error -> currentState.copy(
+                                isLoading = false,
+                                error = result.exception.message
+                            )
                         }
-                        is Result.Error -> currentState.copy(
-                            isLoading = false,
-                            error = result.exception.message
-                        )
                     }
                 }
             }
@@ -158,7 +156,7 @@ class RecipeViewModel(
         searchJob?.cancel()
 
         if (query.isEmpty()) {
-            loadStoredRecipes()
+            clearScreen() // Changed from loadStoredRecipes() to clearScreen()
             return
         }
 
@@ -177,27 +175,18 @@ class RecipeViewModel(
         }
     }
 
-    fun onCategorySelected(category: String) {
+    fun clearScreen() {
         searchJob?.cancel()
-        resetState()
         _uiState.update { currentState ->
             currentState.copy(
-                selectedCategory = category,
-                searchQuery = "" // Clear search query when selecting category
+                isLoading = false,
+                recipes = emptyList(),
+                error = null,
+                searchQuery = "",
+                selectedCategory = "",
+                currentPage = 1,
+                hasMorePages = true
             )
-        }
-        loadRecipes(refresh = true)
-    }
-
-    fun selectRecipe(recipe: Recipe) {
-        _uiState.update { currentState ->
-            currentState.copy(selectedRecipe = recipe)
-        }
-    }
-
-    fun clearSelectedRecipe() {
-        _uiState.update { currentState ->
-            currentState.copy(selectedRecipe = null)
         }
     }
 

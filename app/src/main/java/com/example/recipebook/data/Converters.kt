@@ -15,4 +15,4 @@ class Converters {
     fun fromList(list: List<String>): String {
         return Gson().toJson(list)
     }
-} 
+}

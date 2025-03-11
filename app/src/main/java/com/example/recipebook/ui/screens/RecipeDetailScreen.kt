@@ -1,6 +1,5 @@
 package com.example.recipebook.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,11 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.recipebook.data.Recipe
+import com.example.recipebook.data.decodeHtml
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +36,7 @@ fun RecipeDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = recipe.title) },
+                title = { Text(text = decodeHtml(recipe.title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -56,7 +54,7 @@ fun RecipeDetailScreen(
             // Recipe Image
             AsyncImage(
                 model = recipe.featuredImage,
-                contentDescription = recipe.title,
+                contentDescription = decodeHtml(recipe.title),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -66,18 +64,17 @@ fun RecipeDetailScreen(
             // Recipe Details
             Column(
                 modifier = Modifier.padding(16.dp)
-                    .background(Color(0xfffb8a4e)), // Orange background color
             ) {
                 // Title and Publisher
                 Text(
-                    text = recipe.title,
+                    text = decodeHtml(recipe.title),
                     style = MaterialTheme.typography.headlineMedium
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "by ${recipe.publisher}",
+                    text = "by ${decodeHtml(recipe.publisher)}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -110,7 +107,7 @@ fun RecipeDetailScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            text = ingredient,
+                            text = decodeHtml(ingredient),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -125,7 +122,7 @@ fun RecipeDetailScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = recipe.description,
+                        text = decodeHtml(recipe.description),
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }
@@ -140,7 +137,7 @@ fun RecipeDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = instructions,
+                            text = decodeHtml(instructions),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }

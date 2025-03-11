@@ -5,20 +5,22 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.example.recipebook.data.Recipe
+import com.example.recipebook.data.RecipeDatabase
+import com.example.recipebook.repository.RecipeRepository
+import com.example.recipebook.ui.screens.RecipeDetailScreen
 import com.example.recipebook.ui.screens.RecipeListScreen
 import com.example.recipebook.ui.screens.SplashScreen
-import com.example.recipebook.ui.screens.RecipeDetailScreen
 import com.example.recipebook.ui.theme.RecipeBookTheme
 import com.example.recipebook.viewmodel.RecipeViewModel
-import com.example.recipebook.repository.RecipeRepository
-import com.example.recipebook.data.RecipeDatabase
 import kotlinx.coroutines.delay
 
 private const val TAG = "MainActivity"
@@ -54,7 +56,6 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-//                        color = Color(0xFFFB8A4E)
                     ) {
                         database?.let {
                             if (selectedRecipe != null) {
