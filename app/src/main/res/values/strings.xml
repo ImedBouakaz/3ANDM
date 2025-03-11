@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">RecipeBook</string>
+    <string name ="recipe_content">Entrez le contenu de votre recette</string>
+    <string name ="recipe_title">Entrez le titre de votre recette</string>
+    <string name="recipe_save">Enregistrer</string>
 </resources>
