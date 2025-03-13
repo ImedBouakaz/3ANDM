@@ -86,7 +86,6 @@ class RecipeViewModel(
                 currentState.copy(isLoading = true)
             }
 
-            // For searches, use network results
             if (_uiState.value.searchQuery.isNotEmpty() || _uiState.value.selectedCategory.isNotEmpty()) {
                 repository.searchRecipes(
                     RecipeSearchQuery(
@@ -131,6 +130,7 @@ class RecipeViewModel(
         }
     }
 
+    // Permet de charger la page suivante
     fun loadNextPage() {
         if (!_uiState.value.isLoading && _uiState.value.hasMorePages) {
             _uiState.update { currentState ->
@@ -152,14 +152,13 @@ class RecipeViewModel(
         }
     }
 
+    // Clear l'écran grâce à un bouton
     fun onSearchQueryChanged(query: String) {
         searchJob?.cancel()
-
         if (query.isEmpty()) {
-            clearScreen() // Changed from loadStoredRecipes() to clearScreen()
+            clearScreen()
             return
         }
-
         resetState()
         _uiState.update { currentState ->
             currentState.copy(
@@ -168,7 +167,6 @@ class RecipeViewModel(
                 isLoading = true
             )
         }
-
         searchJob = viewModelScope.launch {
             delay(SEARCH_DEBOUNCE_MS)
             loadRecipes(refresh = true)

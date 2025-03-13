@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Permet de debug la database
     private fun initializeDatabase() {
         try {
             Log.d(TAG, "initializeDatabase: Starting database initialization")

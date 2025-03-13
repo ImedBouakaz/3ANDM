@@ -1,9 +1,11 @@
 package com.example.recipebook.data
 
 import android.annotation.SuppressLint
-import android.text.Html
 import android.os.Build
+import android.text.Html
 
+
+// Decode les strings HTML ( &amp;, &quot;, etc...)
 @SuppressLint("ObsoleteSdkInt")
 fun decodeHtml(htmlText: String): String {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
